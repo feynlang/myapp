@@ -126,7 +126,7 @@ jobs:
             sudo systemctl restart ${{ env.SERVICE_NAME }}
 
             for i in {1..60}; do
-              STATUS=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || echo '000')
+              STATUS=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true)
               if [ "\$STATUS" = "200" ]; then
                 echo 'Health check passed'
                 exit 0
