@@ -25,6 +25,9 @@ spring:
       client:
         registration:
           github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            redirect-uri: http://localhost:8080/login/oauth2/code/github
             scope:
               - read:user
               - user:email
