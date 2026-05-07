@@ -1,9 +1,12 @@
 HELP.md
 .gradle
+.gradle-home/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+.DS_Store
+.일회용/
 
 ### STS ###
 .apt_generated
