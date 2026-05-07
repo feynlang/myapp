@@ -22,8 +22,8 @@ spring:
       client:
         registration:
           github:
-            client-id: ${GITHUB_CLIENT_ID}
-            client-secret: ${GITHUB_CLIENT_SECRET}
+            client-id: ${GITHUB_CLIENT_ID:dummy}
+            client-secret: ${GITHUB_CLIENT_SECRET:dummy}
             redirect-uri: https://myapp.koreacentral.cloudapp.azure.com/login/oauth2/code/github
 
 logging:
