@@ -138,13 +138,13 @@ jobs:
               sleep 3
             done
 
-            if [ "$APP_READY" = "1" ]; then
-              exit 0
+            if [ "$APP_READY" != "1" ]; then
+              echo 'Health check failed'
+              sudo journalctl -u ${{ env.SERVICE_NAME }} -n 50 --no-pager
+              exit 1
             fi
 
-            echo 'Health check failed'
-            sudo journalctl -u ${{ env.SERVICE_NAME }} -n 50 --no-pager
-            exit 1
+            echo "Deploy completed successfully"
           EOF
 
       - name: SSH key 정리
