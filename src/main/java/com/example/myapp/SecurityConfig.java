@@ -1,6 +1,5 @@
 package com.example.myapp;
 
-import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,7 +19,8 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
-            .csrf(csrf->csrf.ignoringRequestMatchers(PathRequest.toH2Console()))
+            .csrf(csrf -> csrf.ignoringRequestMatchers(
+                PathPatternRequestMatcher.withDefaults().matcher("/h2-console/**")))
             .headers(headers->headers.frameOptions(frame->frame.sameOrigin()))
             .formLogin(formLogin->formLogin
                 .loginPage("/user/login").defaultSuccessUrl("/"))
