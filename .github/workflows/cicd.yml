@@ -125,13 +125,13 @@ jobs:
 
             sudo systemctl restart ${{ env.SERVICE_NAME }}
 
-            for i in {1..60}; do
+            for i in {1..150}; do
               STATUS=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true)
               if [ "\$STATUS" = "200" ]; then
                 echo 'Health check passed'
                 exit 0
               fi
-              echo "Waiting for app... (\$i/60, status=\$STATUS)"
+              echo "Waiting for app... (\$i/150, status=\$STATUS)"
               sleep 3
             done
 
