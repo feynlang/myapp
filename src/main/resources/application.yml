@@ -1,19 +1,34 @@
 spring:
+  application:
+    name: myapp
+
+  datasource: 
+    url: jdbc:h2:~/_feynlang/local
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+  h2:
+    console:
+      enabled: true
+
   security:
     oauth2:
       client:
         registration:
           github:
-            client-id: ${GITHUB_CLIENT_ID}
-            client-secret: ${GITHUB_CLIENT_SECRET}
             scope:
               - read:user
               - user:email
-  datasource:
-    url: jdbc:h2:mem:testdb
-    username: sa
 
-#   datasource:
-#     url: jdbc:postgresql://localhost:5432/testdb
-#     username: testuser
-#     password: testpassword
+server:
+  port: 8080
+  forward-headers-strategy: native

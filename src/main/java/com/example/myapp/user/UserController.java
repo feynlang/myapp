@@ -1,4 +1,4 @@
-package com.example.scp.user;
+package com.example.myapp.user;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Controller;

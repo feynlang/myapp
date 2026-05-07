@@ -1,10 +1,10 @@
-package com.example.scp;
+package com.example.myapp;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.example.scp.question.QuestionService;
+import com.example.myapp.question.QuestionService;
 
 @SpringBootTest
 class SimpleCrudPracticeApplicationTests {

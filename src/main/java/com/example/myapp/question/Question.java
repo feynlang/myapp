@@ -1,9 +1,9 @@
-package com.example.scp.question;
+package com.example.myapp.question;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.scp.answer.Answer;
+import com.example.myapp.answer.Answer;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

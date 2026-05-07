@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: jdk 17 환경 세팅
-        uses: actions/setup-java@4
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           # 이클립스 재단에서 제공하는 openJDK 배포판

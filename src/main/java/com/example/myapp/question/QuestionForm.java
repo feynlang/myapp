@@ -1,4 +1,4 @@
-package com.example.scp.question;
+package com.example.myapp.question;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;

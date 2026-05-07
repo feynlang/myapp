@@ -1,4 +1,4 @@
-package com.example.scp.question;
+package com.example.myapp.question;
 
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;

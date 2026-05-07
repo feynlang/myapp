@@ -1,8 +1,8 @@
-package com.example.scp.answer;
+package com.example.myapp.answer;
 
 import java.time.LocalDateTime;
 
-import com.example.scp.question.Question;
+import com.example.myapp.question.Question;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

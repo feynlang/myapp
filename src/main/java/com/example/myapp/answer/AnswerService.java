@@ -1,8 +1,9 @@
-package com.example.scp.answer;
+package com.example.myapp.answer;
 
-import com.example.scp.question.Question;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import com.example.myapp.question.Question;
 
 import java.time.LocalDateTime;
 

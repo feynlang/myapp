@@ -1,4 +1,4 @@
-package com.example.scp.user;
+package com.example.myapp.user;
 
 import lombok.Getter;
 

@@ -1,6 +1,4 @@
-package com.example.scp.question;
-import com.example.scp.answer.AnswerForm;
-
+package com.example.myapp.question;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -17,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.example.myapp.answer.AnswerForm;
+
 import org.springframework.web.bind.annotation.RequestBody;
 
 import org.springframework.web.bind.annotation.RequestParam;

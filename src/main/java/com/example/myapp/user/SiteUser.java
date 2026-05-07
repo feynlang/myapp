@@ -1,4 +1,4 @@
-package com.example.scp.user;
+package com.example.myapp.user;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

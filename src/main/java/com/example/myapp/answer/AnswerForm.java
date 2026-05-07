@@ -1,4 +1,4 @@
-package com.example.scp.answer;
+package com.example.myapp.answer;
 
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;

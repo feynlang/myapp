@@ -1,4 +1,4 @@
-package com.example.scp.user;
+package com.example.myapp.user;
 
 import java.util.ArrayList;
 import java.util.List;

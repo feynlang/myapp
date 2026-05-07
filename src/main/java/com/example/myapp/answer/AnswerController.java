@@ -1,7 +1,4 @@
-package com.example.scp.answer;
-
-import com.example.scp.question.Question;
-import com.example.scp.question.QuestionService;
+package com.example.myapp.answer;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,6 +11,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import com.example.myapp.question.Question;
+import com.example.myapp.question.QuestionService;
+
 import org.springframework.web.bind.annotation.RequestBody;
 
 
