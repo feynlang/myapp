@@ -125,15 +125,22 @@ jobs:
 
             sudo systemctl restart ${{ env.SERVICE_NAME }}
 
+            APP_READY=0
+
             for i in {1..150}; do
               STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true)
               if [ "$STATUS" = "200" ]; then
                 echo 'Health check passed'
-                exit 0
+                APP_READY=1
+                break
               fi
               echo "Waiting for app... ($i/150, status=$STATUS)"
               sleep 3
             done
+
+            if [ "$APP_READY" = "1" ]; then
+              exit 0
+            fi
 
             echo 'Health check failed'
             sudo journalctl -u ${{ env.SERVICE_NAME }} -n 50 --no-pager
