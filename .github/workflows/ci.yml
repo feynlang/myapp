@@ -1,0 +1,71 @@
+name: CI
+
+# Event
+on:
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
+
+# Jobs
+jobs:
+    # 1. CI: 빌드,테스트
+  build:
+    # Runner
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+
+      # Steps
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: jdk 17 환경 세팅
+        uses: actions/setup-java@4
+        with:
+          java-version: '17'
+          # 이클립스 재단에서 제공하는 openJDK 배포판
+          distribution: 'temurin'
+
+      # option: 외부 jar 라이브러리 파일을 다운받아 캐싱, 다음 빌드 때 재사용o
+    #   - name: gradle 캐싱
+    #     uses: actions/cache@v4
+    #     with:
+    #       path: |
+    #         ~/.gradle/caches
+    #         ~/.gradle/wrapper
+    #       key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+    #       restore-keys: |
+    #         ${{ runner.os }}-gradle-
+
+      - name: gradle 셋업
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: gradle 권한 부여
+        run: chmod +x gradlew
+      
+      - name: gradle로 빌드
+        # miss: 테스트 시 프로파일 명시
+        run: ./gradlew clean build
+    
+      - name: test results 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+            name: test-results
+            path: |
+              build/reports/tests/
+              build/test-results/
+            retention-days: 7
+      
+    #   # PR일때는 CD 실행x이므로 optional하지만, 저장해두면 actions UI단에서 다운로드가 가능해서 편하다는 장점o
+    #   - name: 6. 빌드된 jar 저장
+    #     uses: actions/upload-artifact@v4
+    #     with:
+    #       name: app-jar
+    #       path: build/libs/*.jar
+    #       retention-days: 1

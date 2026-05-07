@@ -1,0 +1,116 @@
+name: Deploy
+
+# Event
+on:
+  push:
+    branches: ["main"] #자동 트리거
+  workflow_dispatch: #수동 트리거
+
+concurrency: #배포 직렬화
+  group: deploy-production
+  cancel-in-progress: false
+
+# Jobs
+jobs:
+  # CD: 테스트 통과시에만 azure 배포
+  deploy:
+    name: deploy to azure VM
+    runs-on: ubuntu-latest
+
+    # needs: build-and-test
+    # # takeaway: github.ref는 파이프라인을 트리거한 코드의 출처(브랜치?)를 의미 / main 브랜치의 실제 주소가 `refs/heads/main`
+    # if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+  
+      - name: jdk 17 setup
+        uses: actions/setup-java@v4
+        with: 
+          java-version: '17'
+          distribution: 'temurin'
+      - name: set up gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: gradle 권한
+        run: chmod +x gradlew
+
+      - name: build JAR
+        run: ./gradlew clean bootJar -x test
+
+      # takeaway1: 왜 plain을 제외? 기본적으로 그레이들로 빌드시 2개 버전 jar파일이 나오기 때문
+      # takeaway2: 깃헙액션 내부에서 $GITHUB_OUTPUT 파일에 path값으로 저장됨.(이후 SCP로 jar파일 전송할때 outputs.path로 참조)
+      - name: find jar file
+        id: find_jar
+        run: |
+          JAR_FILE=$(ls ./artifact/*.jar | grep -v plain | head -n 1)
+          echo "Found: $JAR_FILE"
+          echo "path=$JAR_FILE" >> $GITHUB_OUTPUT
+
+      - name: set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AZURE_VM_SSH_KEY }}" > ~/.ssh/azure_vm.pem
+          chmod 600 ~/.ssh/azure_vm.pem
+          ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: env file 생성
+        run: |
+          cat > app.env << EOF
+          SPRING_PROFILE_ACTIVE=prod
+          SPRING_DATASOURCE_URL=jdbc:postgresql://${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}?sslmode=require
+          SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USER }}
+          SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}
+          SERVER_PORT=8080
+          EOF
+      
+      # takeaway1: 왜 먼저 올리고 다음 단계에서 교체?= atomic한 복사를 위함. 성공or실패여야지 중간은 없어야함. 하지만 scp로 복사==스트리밍이라 이대로는 불가능. 그러니 .new로 먼저 올리고 mv로 교체해야 atomic한 복사가 가능.
+      # takeaway2: scp2번-> jar파일/env파일
+      - name: VM에 artifacts 복제
+        run: |
+          scp -i ~/.ssh/id_rsa \
+            ${{ steps.find_jar.outputs.jar_path}}
+            ${{ secrets.SSH_USER }}@{{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH}}/app.jar.new
+          scp -i ~/.ssh/id_rsa \
+            app.env \
+            ${{ secrets.SSH_USER }}@{{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH}}/app.env.new
+      
+      # takeaway: 큰따옴표(\가 필요) vs Heredoc(EOF, github secrets사용x) -> Heredoc + 환경변수로 빼기
+      # takeaway: set -e => 명령어가 하나라도 실패하면 전체 중단
+      - name: Deploy and verify health
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          SERVICE_NAME: ${{ secrets.SERVICE_NAME }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST << EOF
+            set -e;  
+            
+            mv $DEPLOY_PATH/app.jar.new $DEPLOY_PATH/app.jar
+            mv $DEPLOY_PATH/app.env.new $DEPLOY_PATH/app.env
+            chmod 600 $DEPLOY_PATH/app.env
+            
+            sudo systemctl restart $SERVICE_NAME
+
+            for i in {1..30}; do
+              STATUS=\$(curl -s -o /dev/null -w '${http_code}' http://localhost:8080/actuator/health || echo '000')
+              if [ "\$STATUS"= "200"]; then
+                echo 'Health check passed'; 
+                exit 0;
+              fi;
+              echo "Waiting for app... (\$i/30, status=\$STATUS)";
+              sleep 2; 
+            done;
+
+            echo 'Health check failed';
+            sudo journalctl -u $SERVICE_NAME -n 50 --no-pager;
+            exit 1
+          EOF
+      
+      - name: Clean up SSH key
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_rsa
+          rm -f app.env
