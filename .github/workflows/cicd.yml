@@ -188,7 +188,7 @@ jobs:
 
             echo "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
-            docker compose pull
+            docker compose pull --quiet
             docker compose up -d
 
             APP_READY=0
