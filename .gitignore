@@ -12,6 +12,8 @@ build/
 .env.*
 !.env.example
 
+docs/superpowers/
+
 ### STS ###
 .apt_generated
 .classpath
