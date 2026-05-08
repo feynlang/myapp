@@ -13,11 +13,10 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    restart: unless-stopped
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/${IMAGE_NAME}:${IMAGE_TAG}
     depends_on:
       db:
         condition: service_healthy
@@ -31,7 +30,7 @@ services:
       GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://localhost:8080/login/oauth2/code/github}
       SERVER_ADDRESS: 0.0.0.0
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
       interval: 10s
