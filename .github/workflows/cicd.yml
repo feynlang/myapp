@@ -13,7 +13,6 @@ concurrency:
 
 env:
   DEPLOY_PATH: /opt/myapp
-  SERVICE_NAME: myapp
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -104,13 +103,6 @@ jobs:
             build/test-results/
           retention-days: 7
 
-      # - name: jar artifact 업로드
-      #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: app-jar
-      #     path: build/libs/*.jar
-      #     retention-days: 1
   deploy:
     name: Deploy to Azure VM
     needs: build
@@ -125,12 +117,32 @@ jobs:
           chmod 600 ~/.ssh/azure_vm.pem
           ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
 
+      - name: VM 배포 디렉터리 준비
+        env:
+          SSH_USER: ${{ secrets.AZURE_VM_USER }}
+          SSH_HOST: ${{ secrets.AZURE_VM_HOST }}
+        run: |
+          ssh -i ~/.ssh/azure_vm.pem $SSH_USER@$SSH_HOST "mkdir -p ${{ env.DEPLOY_PATH }}"
+
+      - name: VM용 Compose 파일 전송
+        env:
+          SSH_USER: ${{ secrets.AZURE_VM_USER }}
+          SSH_HOST: ${{ secrets.AZURE_VM_HOST }}
+        run: |
+          scp -i ~/.ssh/azure_vm.pem \
+            compose.prod.yaml \
+            $SSH_USER@$SSH_HOST:${{ env.DEPLOY_PATH }}/compose.yaml
+
       - name: 배포 및 헬스체크
         env:
           SSH_USER: ${{ secrets.AZURE_VM_USER }}
           SSH_HOST: ${{ secrets.AZURE_VM_HOST }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          GITHUB_CLIENT_ID: ${{ secrets.APP_GITHUB_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.APP_GITHUB_CLIENT_SECRET }}
+          GITHUB_REDIRECT_URI: ${{ secrets.APP_GITHUB_REDIRECT_URI }}
           IMAGE_TAG: latest
         run: |
           ssh -i ~/.ssh/azure_vm.pem $SSH_USER@$SSH_HOST <<EOF
@@ -138,13 +150,19 @@ jobs:
 
             cd ${{ env.DEPLOY_PATH }}
 
-            echo "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+            cat > .env <<ENVFILE
+            IMAGE_NAME=${{ env.IMAGE_NAME }}
+            IMAGE_TAG=$IMAGE_TAG
+            SPRING_PROFILES_ACTIVE=prod
+            POSTGRES_DB=myappdb
+            POSTGRES_USER=myapp
+            POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+            GITHUB_CLIENT_ID=$GITHUB_CLIENT_ID
+            GITHUB_CLIENT_SECRET=$GITHUB_CLIENT_SECRET
+            GITHUB_REDIRECT_URI=$GITHUB_REDIRECT_URI
+            ENVFILE
 
-            if grep -q '^IMAGE_TAG=' .env; then
-              sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$IMAGE_TAG/" .env
-            else
-              echo "IMAGE_TAG=$IMAGE_TAG" >> .env
-            fi
+            echo "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 
             docker compose pull
             docker compose up -d
@@ -173,78 +191,3 @@ jobs:
       - name: SSH key 정리
         if: always()
         run: rm -f ~/.ssh/azure_vm.pem
-
-
-  # deploy:
-  #   name: Deploy to Azure VM
-  #   needs: build
-  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   runs-on: ubuntu-latest
-
-  #   steps:
-  #     - name: jar artifact 다운로드
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: app-jar
-  #         path: build/libs/
-
-  #     - name: jar 파일 경로 찾기
-  #       id: find_jar
-  #       run: |
-  #         JAR_FILE=$(ls ./build/libs/*.jar | grep -v plain | head -n 1)
-  #         echo "Found: $JAR_FILE"
-  #         echo "path=$JAR_FILE" >> $GITHUB_OUTPUT
-
-  #     - name: SSH key 설정
-  #       run: |
-  #         mkdir -p ~/.ssh
-  #         echo "${{ secrets.AZURE_VM_SSH_KEY }}" > ~/.ssh/azure_vm.pem
-  #         chmod 600 ~/.ssh/azure_vm.pem
-  #         ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
-
-  #     - name: VM에 jar 전송
-  #       env:
-  #         SSH_USER: ${{ secrets.AZURE_VM_USER }}
-  #         SSH_HOST: ${{ secrets.AZURE_VM_HOST }}
-  #       run: |
-  #         scp -i ~/.ssh/azure_vm.pem \
-  #           ${{ steps.find_jar.outputs.path }} \
-  #           $SSH_USER@$SSH_HOST:${{ env.DEPLOY_PATH }}/app.jar.new
-
-  #     - name: 배포 및 헬스체크
-  #       env:
-  #         SSH_USER: ${{ secrets.AZURE_VM_USER }}
-  #         SSH_HOST: ${{ secrets.AZURE_VM_HOST }}
-  #       run: |
-  #         ssh -i ~/.ssh/azure_vm.pem $SSH_USER@$SSH_HOST << 'EOF'
-  #           set -e
-
-  #           mv ${{ env.DEPLOY_PATH }}/app.jar.new ${{ env.DEPLOY_PATH }}/app.jar
-
-  #           sudo systemctl restart ${{ env.SERVICE_NAME }}
-
-  #           APP_READY=0
-
-  #           for i in {1..150}; do
-  #             STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/actuator/health || true)
-  #             if [ "$STATUS" = "200" ]; then
-  #               echo 'Health check passed'
-  #               APP_READY=1
-  #               break
-  #             fi
-  #             echo "Waiting for app... ($i/150, status=$STATUS)"
-  #             sleep 3
-  #           done
-
-  #           if [ "$APP_READY" != "1" ]; then
-  #             echo 'Health check failed'
-  #             sudo journalctl -u ${{ env.SERVICE_NAME }} -n 50 --no-pager
-  #             exit 1
-  #           fi
-
-  #           echo "Deploy completed successfully"
-  #         EOF
-
-  #     - name: SSH key 정리
-  #       if: always()
-  #       run: rm -f ~/.ssh/azure_vm.pem
