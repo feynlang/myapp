@@ -1,6 +1,5 @@
 package com.example.myapp;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,11 +20,5 @@ class SimpleCrudPracticeApplicationTests {
 			this.questionService.create(subject, content);
 		}
 
-	}
-
-	// CI 실패 감지 검증용 임시 테스트 — 확인 후 되돌릴 것
-	@Test
-	void cicdFailureProbe() {
-		Assertions.fail("의도된 실패: CI 파이프라인이 빌드 실패를 제대로 감지하는지 확인");
 	}
 }
