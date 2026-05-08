@@ -14,11 +14,16 @@ concurrency:
 env:
   DEPLOY_PATH: /opt/myapp
   SERVICE_NAME: myapp
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     services:
       postgres:
@@ -58,6 +63,36 @@ jobs:
           DB_URL: jdbc:postgresql://localhost:5432/testdb
           DB_USERNAME: testuser
           DB_PASSWORD: testpassword
+      
+      - name: Docker Buildx 설정
+        uses: docker/setup-buildx-action@v4
+      
+      - name: Docker metadata 추출
+        id: meta
+        uses: docker/metadata-action@v6
+        with: 
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      
+      - name: GHCR 로그인
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker 이미지 빌드 및 푸시
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/head/main' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: test results 업로드
         if: always()
