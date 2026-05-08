@@ -1,9 +1,9 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/myappdb
-    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
   
   jpa:
     hibernate:
@@ -24,8 +24,7 @@ spring:
           github:
             client-id: ${GITHUB_CLIENT_ID:dummy}
             client-secret: ${GITHUB_CLIENT_SECRET:dummy}
-            redirect-uri: https://myapp.koreacentral.cloudapp.azure.com/login/oauth2/code/github
-
+            redirect-uri: ${GITHUB_REDIRECT_URI}
 logging:
   level:
     root: INFO
@@ -40,4 +39,4 @@ management:
       show-details: never
 
 server:
-  address: 127.0.0.1
+  address: ${SERVER_ADDRESS:127.0.0.1}
