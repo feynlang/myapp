@@ -110,6 +110,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
       - name: SSH key 설정
         run: |
           mkdir -p ~/.ssh
